@@ -1,0 +1,15 @@
+﻿asl_alphabet_train/
+asl_alphabet_test/
+ASL-HG American Sign Language Hand Gesture Image D/
+SignAlphaSet/
+cropped_combined/
+cropped_signalphaset/
+*.csv
+hand_landmarker.task
+*.keras
+*.h5
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+.vercel/
