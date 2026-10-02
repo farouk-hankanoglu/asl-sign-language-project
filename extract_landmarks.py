@@ -1,28 +1,3 @@
-"""
-extract_landmarks.py
-
-Purpose:
-    Walk through a folder of ASL hand-sign images (organized as
-    dataset_root/A/img1.jpg, dataset_root/B/img1.jpg, etc.) and convert
-    each image into a row of 21 hand landmarks (63 numbers: x, y, z per point).
-
-    Output: a single CSV file where each row = one image, columns = 
-    [label, x0, y0, z0, x1, y1, z1, ..., x20, y20, z20]
-
-Usage:
-    python extract_landmarks.py --input /path/to/dataset_root --output landmarks.csv
-
-Why normalization matters:
-    Raw MediaPipe coordinates are relative to the image frame, so a hand
-    in the top-left of one photo and the same hand in the center of
-    another photo would produce very different numbers, even though the
-    HAND SHAPE is identical. We fix this by:
-      1. Translating so the wrist (landmark 0) is at the origin (0,0,0).
-      2. Scaling so the distance from wrist to middle-fingertip is 1.0.
-    This means the classifier only ever sees the SHAPE of the hand,
-    not its position or size in the photo. This is what makes the
-    model work regardless of how close/far the hand is from the camera.
-"""
 
 import os
 import csv
