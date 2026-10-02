@@ -1,30 +1,4 @@
-"""
-angle_features.py
 
-Converts raw (x,y,z) hand landmarks into ROTATION-INVARIANT joint-angle
-features. This is the standard fix in hand-pose research for
-cross-dataset/cross-camera generalization: raw coordinates change
-depending on how the hand is rotated relative to the camera, but the
-ANGLES between finger bones describe the hand's shape regardless of
-orientation.
-
-MediaPipe's 21 landmarks, by finger:
-    Wrist: 0
-    Thumb:  1(CMC) 2(MCP) 3(IP) 4(TIP)
-    Index:  5(MCP) 6(PIP) 7(DIP) 8(TIP)
-    Middle: 9(MCP) 10(PIP) 11(DIP) 12(TIP)
-    Ring:   13(MCP) 14(PIP) 15(DIP) 16(TIP)
-    Pinky:  17(MCP) 18(PIP) 19(DIP) 20(TIP)
-
-For each finger, we compute the bend angle at each joint (the angle
-between the two bone segments meeting at that joint). We also compute
-the spread angle between adjacent fingers at the base (how far apart
-the fingers are splayed), which distinguishes signs like "U" vs "V"
-that differ mainly in finger spread, not bend.
-
-This produces a much smaller (19-value) feature vector that is
-invariant to the hand's rotation and position - only its SHAPE matters.
-"""
 
 import numpy as np
 
@@ -36,7 +10,6 @@ FINGER_CHAINS = {
     "pinky":  [0, 17, 18, 19, 20],
 }
 
-# MCP (base) landmark index per finger, used for spread angles
 FINGER_BASES = {
     "thumb": 2, "index": 5, "middle": 9, "ring": 13, "pinky": 17
 }
@@ -68,7 +41,6 @@ def landmarks_to_angles(flat_63):
 
     features = []
 
-    # --- Bend angles: angle at each joint along each finger ---
     for finger, chain in FINGER_CHAINS.items():
         for i in range(1, len(chain) - 1):
             p_prev = pts[chain[i - 1]]
@@ -78,8 +50,6 @@ def landmarks_to_angles(flat_63):
             v2 = p_next - p_curr
             features.append(_angle_between(v1, v2))
 
-    # --- Spread angles: angle between adjacent fingers at their base,
-    #     measured from the wrist ---
     wrist = pts[0]
     for f1, f2 in ADJACENT_FINGER_PAIRS:
         v1 = pts[FINGER_BASES[f1]] - wrist

@@ -1,19 +1,4 @@
-"""
-test_third_dataset.py
 
-The real generalization test: trains on ALL of the combined Kaggle +
-ASL-HG data (no held-out split this time, since we now have a true
-third, independent dataset to test on), then evaluates purely on
-SignAlphaSet - a dataset from different people, different country,
-different camera setup, that the model has NEVER seen in any form.
-
-This is the strongest possible test of whether the approach actually
-generalizes to new signers, or is still tied to the specific datasets
-it was trained on.
-
-Usage:
-    python test_third_dataset.py --kaggle landmarks_train.csv --aslhg landmarks_aslhg.csv --third landmarks_signalphaset.csv
-"""
 
 import argparse
 import numpy as np

@@ -1,20 +1,4 @@
-"""
-train_classifier.py
 
-Trains and compares two classifiers on hand-landmark data:
-  1. Random Forest  (sklearn)
-  2. Small feed-forward neural network (tensorflow/keras)
-
-Both are trained on the SAME train/test split of the primary dataset,
-so the comparison is fair. We also run a CROSS-DATASET test: train on
-dataset A, evaluate on dataset B (a dataset the model has never seen),
-to check the model generalizes rather than memorizing one dataset's
-quirks (this is what Douglas specifically asked for).
-
-Usage:
-    python train_classifier.py --primary data/placeholder_kaggle.csv \
-                                --secondary data/placeholder_aslhg.csv
-"""
 
 import argparse
 import numpy as np

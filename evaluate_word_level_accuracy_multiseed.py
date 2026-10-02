@@ -1,19 +1,4 @@
-"""
-evaluate_word_level_accuracy_multiseed.py
 
-Douglas's request: repeat the 300-word sampling with different random
-seeds and report the mean and spread, rather than a single run - this
-shows the 89.7% figure is stable, not a lucky draw.
-
-Same clean split as before (Half A for confusion matrix, Half B for
-word-level testing, fully independent - the circularity fix), but now
-repeated across N different random seeds for the word-sampling step,
-reporting mean, standard deviation, and a rough 95% confidence
-interval.
-
-Usage:
-    python evaluate_word_level_accuracy_multiseed.py --kaggle landmarks_train.csv --aslhg landmarks_aslhg.csv --third landmarks_signalphaset.csv --dictionary_file words10k.txt --n_seeds 10
-"""
 
 import argparse
 import random

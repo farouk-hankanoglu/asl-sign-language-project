@@ -1,25 +1,4 @@
-"""
-train_combined.py
 
-Fixes the generalization problem found in the cross-dataset test:
-training on Kaggle ONLY caused the model to overfit to Kaggle's specific
-photo conditions (one signer, one background, one camera).
-
-This script instead:
-  1. Loads BOTH datasets (Kaggle + ASL-HG)
-  2. Keeps only the 26 letters (A-Z) common to both (drops Kaggle's
-     'del'/'space' and ASL-HG's digits 0-9, since they don't overlap)
-  3. Combines them into one larger, more VARIED training pool
-  4. Splits into train/test using stratification, so the test set has
-     a proportional mix from both sources
-  5. Trains Random Forest and a small Neural Network on the combined data
-  6. Reports overall accuracy AND accuracy broken down per source
-     (Kaggle-origin test samples vs ASL-HG-origin test samples), so we
-     can see whether the model now performs well on BOTH, not just one.
-
-Usage:
-    python train_combined.py --kaggle landmarks_train.csv --aslhg landmarks_aslhg.csv
-"""
 
 import argparse
 import numpy as np

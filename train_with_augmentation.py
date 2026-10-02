@@ -1,26 +1,4 @@
-"""
-train_with_augmentation.py
 
-Real fix attempt for the generalization gap found in test_third_dataset.py.
-
-Hypothesis: the systematic letter-pair swaps (G<->Z, O<->E, J<->I) are
-caused by left/right hand mirroring inconsistencies between datasets
-(e.g. some cameras/datasets mirror the image, others don't). A model
-that only ever saw one orientation during training has no way to
-recognize the other.
-
-Fix: augment the training data with a horizontally-mirrored copy of
-every sample. Mirroring a hand landmark set = flipping the x-coordinate
-(x -> -x), keeping y and z the same. The mirrored version still
-represents the SAME letter (just viewed as if from the other hand /
-a mirrored camera), so it keeps the same label.
-
-This roughly doubles the effective training set size and should make
-the model robust to whichever mirroring convention a given dataset used.
-
-Usage:
-    python train_with_augmentation.py --kaggle landmarks_train.csv --aslhg landmarks_aslhg.csv --third landmarks_signalphaset.csv
-"""
 
 import argparse
 import numpy as np

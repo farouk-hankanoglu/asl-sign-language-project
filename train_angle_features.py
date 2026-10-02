@@ -1,14 +1,4 @@
-"""
-train_angle_features.py
 
-Same combined-training + third-dataset-holdout evaluation as before,
-but using ROTATION-INVARIANT ANGLE FEATURES (from angle_features.py)
-instead of raw (x,y,z) landmark coordinates. This directly targets the
-generalization gap found in test_third_dataset.py.
-
-Usage:
-    python train_angle_features.py --kaggle landmarks_train.csv --aslhg landmarks_aslhg.csv --third landmarks_signalphaset.csv
-"""
 
 import argparse
 import numpy as np

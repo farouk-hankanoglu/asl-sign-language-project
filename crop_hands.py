@@ -1,23 +1,4 @@
-"""
-crop_hands.py
 
-Prepares images for CNN training (instead of extracting landmark
-coordinates). For each image:
-  1. Runs MediaPipe hand detection (same model as extract_landmarks.py)
-  2. Computes a bounding box around the detected hand, with padding
-  3. Crops to that box and resizes to a fixed size (224x224, standard
-     for MobileNetV3)
-  4. Saves the cropped hand image to output_dir/<label>/<prefix>_<n>.jpg
-
-Run this once per source dataset, pointing all runs at the SAME
-output_dir but with a different --prefix, so the cropped images from
-multiple datasets merge cleanly into one combined folder structure
-without overwriting each other:
-
-    python crop_hands.py --input asl_alphabet_train\\asl_alphabet_train --output cropped_combined --prefix kaggle --max_per_class 300
-    python crop_hands.py --input "ASL-HG ...\\asl_dataset" --output cropped_combined --prefix aslhg --max_per_class 300
-    python crop_hands.py --input SignAlphaSet --output cropped_signalphaset --prefix third --max_per_class 300
-"""
 
 import os
 import argparse

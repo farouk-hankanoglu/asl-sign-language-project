@@ -1,20 +1,4 @@
-"""
-export_model_for_web.py
 
-Trains the small feedforward neural network (our landmark classifier)
-on the combined, mirror-augmented Kaggle+ASL-HG data, then exports its
-weights as a single JSON file that a webpage can load directly - no
-Python/TensorFlow needed in the browser, just plain JavaScript math.
-
-Why the neural network (not Random Forest) for the web demo:
-Random Forest is a collection of decision trees, which doesn't export
-to a simple numeric format - it's awkward to run in JavaScript. Our
-small neural network is just a few matrix multiplications, which is
-easy and fast to reimplement in plain JS.
-
-Usage:
-    python export_model_for_web.py --kaggle landmarks_train.csv --aslhg landmarks_aslhg.csv --output model_weights.json
-"""
 
 import argparse
 import json
@@ -64,9 +48,9 @@ def export_weights_to_json(model, class_names, output_path):
         if isinstance(layer, layers.Dense):
             W, b = layer.get_weights()
             export["layers"].append({
-                "weights": W.tolist(),   # shape: [input_dim, output_dim]
-                "bias": b.tolist(),      # shape: [output_dim]
-                "activation": layer.activation.__name__,  # "relu" or "softmax"
+                "weights": W.tolist(),   #  [input_dim, output_dim]
+                "bias": b.tolist(),      # [output_dim]
+                "activation": layer.activation.__name__,  
             })
     with open(output_path, "w") as f:
         json.dump(export, f)

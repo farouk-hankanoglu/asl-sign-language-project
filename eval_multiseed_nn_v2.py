@@ -1,56 +1,4 @@
-"""
-eval_multiseed_nn.py
-====================
 
-Word-level accuracy of the confidence-aware correction layer, using the
-NEURAL NETWORK classifier -- the same model that is exported to the web app.
-
-WHY THIS SCRIPT EXISTS
-----------------------
-evaluate_word_level_accuracy_multiseed.py measured word-level accuracy using
-the Random Forest. The model actually deployed in the application, and the one
-whose on-device cost is reported in the evaluation chapter, is the neural
-network. Reporting word-level results from one model and deployment results
-from another is an inconsistency an examiner will find. This script closes it
-by running the identical protocol with the network.
-
-PROTOCOL (unchanged from the Random Forest version)
----------------------------------------------------
-1. Train the classifier on the TRAINING datasets only.
-2. Split the HELD-OUT dataset into two disjoint halves, stratified by letter:
-      Half A -- used ONLY to estimate the letter confusion matrix
-      Half B -- used ONLY to evaluate word-level accuracy
-   The halves never overlap. This is what prevents the circularity of
-   estimating a channel model on the same images used to score it.
-3. Sample words uniformly from the dictionary.
-4. For each letter of each word, draw one unseen image from Half B, take the
-   network's predicted letter and its softmax confidence.
-5. Apply the noisy-channel correction:
-      cost(p -> c) = (1 - f[c][p]) * conf(p)
-   where f[c][p] is P(predicted p | true c) estimated on Half A. Accept the
-   best dictionary candidate if its mean cost per letter is below THRESHOLD.
-6. Repeat over N seeds and report mean +/- standard deviation.
-
-TWO VARIABILITY MODES
----------------------
-  fixed    - one classifier, trained once; seeds vary only word sampling and
-             image selection. This is what the earlier results measured, and
-             it is why the error bars are small: they do NOT include
-             classifier variability.
-  retrain  - the classifier is retrained with a different initialisation on
-             every seed, so the error bars include classifier variability too.
-
-The script runs BOTH and prints both, so the dissertation can state exactly
-what its +/- figures represent. Supervisor feedback specifically asked for
-this to be made explicit.
-
-USAGE
------
-    python eval_multiseed_nn.py
-
-If it cannot find your CSV files it will say so and list what it did find.
-Edit the CONFIG block below if your filenames differ.
-"""
 
 import os
 import sys
@@ -61,14 +9,6 @@ import argparse
 
 import numpy as np
 
-# ----------------------------------------------------------------------------
-# CONFIG -- edit these if your filenames differ
-# ----------------------------------------------------------------------------
-
-# CSVs used to TRAIN the classifier. Globs are allowed.
-# Every dataset available. --holdout picks which one is held out; the rest
-# become the training set. This makes leave-one-dataset-out possible without
-# editing anything.
 ALL_DATASETS = {
     "kaggle":       "landmarks_train.csv",
     "aslhg":        "landmarks_aslhg.csv",
@@ -80,18 +20,18 @@ TRAIN_CSVS = [
     "landmarks_aslhg.csv",     # ASL-HG
 ]
 
-# The HELD-OUT CSV. Never used for training; split into Half A / Half B.
+
 HELDOUT_CSV = "landmarks_signalphaset.csv"
 
 DICTIONARY_FILE = "words10k.txt"
 
 N_SEEDS = 10
-N_WORDS = 300           # words sampled per seed
+N_WORDS = 300         
 MIN_WORD_LEN = 3
 MAX_WORD_LEN = 8
-THRESHOLD = 0.5         # max mean cost per letter to accept a correction
+THRESHOLD = 0.5         
 EPOCHS = 60
-RF_TREES = 200          # only used by --model rf / both
+RF_TREES = 200         
 BATCH_SIZE = 32
 OUT_DIR = "outputs"
 
@@ -99,14 +39,7 @@ LETTERS = [chr(ord("A") + i) for i in range(26)]
 L2I = {c: i for i, c in enumerate(LETTERS)}
 
 
-# ----------------------------------------------------------------------------
-# Loading
-# ----------------------------------------------------------------------------
 
-# Where to look for data files. The folder this script lives in is searched
-# as well as the current working directory, so that running
-#     python C:\...\asl_scripts\eval_multiseed_nn.py
-# from somewhere else still finds the CSVs sitting next to the script.
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 SEARCH_DIRS = []
 for _d in (os.getcwd(), SCRIPT_DIR):
@@ -115,14 +48,7 @@ for _d in (os.getcwd(), SCRIPT_DIR):
 
 
 def _resolve(patterns):
-    """
-    Expand globs against every search directory.
-
-    Returns (found, missing). A pattern that matches nothing is reported in
-    `missing` rather than silently ignored: training on fewer datasets than
-    intended changes the result without changing anything visible, which is
-    how a wrong number ends up in a write-up.
-    """
+  
     found, seen, missing = [], set(), []
     for p in patterns:
         if os.path.isabs(p):
@@ -223,10 +149,6 @@ def load_dictionary(name):
     return out
 
 
-# ----------------------------------------------------------------------------
-# Model -- identical architecture to the one exported to the web app
-# ----------------------------------------------------------------------------
-
 def build_model(seed):
     import tensorflow as tf
     from tensorflow import keras
@@ -247,13 +169,7 @@ def build_model(seed):
 
 
 class _RFWrapper:
-    """
-    Gives a scikit-learn RandomForest the same .predict(X) -> probabilities
-    interface the rest of this script expects from Keras, so that BOTH
-    classifiers go through byte-identical evaluation code. Without this the
-    forest and the network would be compared across two different scripts,
-    and any difference could be the code rather than the model.
-    """
+
 
     def __init__(self, rf):
         self.rf = rf
@@ -282,10 +198,6 @@ def train_model(Xtr, ytr, seed, kind="nn", verbose=0):
     raise ValueError("unknown model kind: " + kind)
 
 
-# ----------------------------------------------------------------------------
-# Circularity-safe split
-# ----------------------------------------------------------------------------
-
 def stratified_halves(y, rng):
     """Split indices into two disjoint halves, balanced per letter."""
     a, b = [], []
@@ -308,10 +220,6 @@ def confusion_from(pred, true):
     f = np.where(rows > 0, f / np.maximum(rows, 1e-12), 1.0 / 26.0)
     return f
 
-
-# ----------------------------------------------------------------------------
-# Noisy-channel correction
-# ----------------------------------------------------------------------------
 
 def substitution_cost(f, pred_idx, cand_idx, conf):
     """cost(p -> c) = (1 - f[c][p]) * conf(p)"""
@@ -341,23 +249,17 @@ def correct_word(observed, confs, f, dictionary_by_len, threshold):
     return (best_word if mean_cost <= threshold else None), mean_cost
 
 
-# ----------------------------------------------------------------------------
-# One evaluation pass
-# ----------------------------------------------------------------------------
 
 def run_seed(seed, model, Xh, yh, dictionary_by_len, words_pool, n_words):
     rng = np.random.default_rng(seed)
     pyrng = random.Random(seed)
 
-    # --- circularity-safe split of the held-out set -------------------------
     idx_a, idx_b = stratified_halves(yh, rng)
 
-    # Half A -> confusion matrix
     prob_a = model.predict(Xh[idx_a], verbose=0)
     pred_a = prob_a.argmax(axis=1)
     f = confusion_from(pred_a, yh[idx_a])
 
-    # Half B -> word evaluation pool, indexed by true letter
     prob_b = model.predict(Xh[idx_b], verbose=0)
     pred_b = prob_b.argmax(axis=1)
     conf_b = prob_b.max(axis=1)
@@ -366,7 +268,6 @@ def run_seed(seed, model, Xh, yh, dictionary_by_len, words_pool, n_words):
     by_letter = {c: np.where(true_b == c)[0] for c in range(26)}
     usable = {c for c, v in by_letter.items() if len(v) > 0}
 
-    # only sample words whose letters all have held-out images available
     pool = [w for w in words_pool if all(L2I[ch] in usable for ch in w)]
     if len(pool) < 50:
         raise RuntimeError(
@@ -412,9 +313,6 @@ def run_seed(seed, model, Xh, yh, dictionary_by_len, words_pool, n_words):
     )
 
 
-# ----------------------------------------------------------------------------
-# Reporting
-# ----------------------------------------------------------------------------
 
 def summarise(name, runs):
     keys = ["letter_acc", "raw_word_acc", "corrected_word_acc", "correction_rate"]

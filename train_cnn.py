@@ -1,23 +1,4 @@
-"""
-train_cnn.py
 
-Fine-tunes a MobileNetV3Small (pretrained on ImageNet) to classify ASL
-letters from cropped hand images. This replaces the landmark-coordinate
-classifier, based on published results showing CNN transfer learning
-on combined multi-dataset training generalizes far better to unseen
-data (99%+ in published work) than small hand-crafted feature vectors.
-
-Two-phase training (standard transfer-learning recipe):
-  Phase 1: freeze the pretrained backbone, train only the new
-           classification head. Fast, stabilizes the new layers
-           without wrecking the pretrained features.
-  Phase 2: unfreeze the backbone, continue training the WHOLE network
-           at a much lower learning rate. This lets the model adapt
-           its general visual features specifically to hand shapes.
-
-Usage:
-    python train_cnn.py --train cropped_combined --test cropped_signalphaset
-"""
 
 import argparse
 import numpy as np
@@ -60,10 +41,7 @@ def build_model(num_classes):
     )
     base.trainable = False  # Phase 1: frozen
 
-    # Strong augmentation: forces the model to rely on hand SHAPE rather
-    # than memorizing background/lighting shortcuts specific to one
-    # dataset's photo style. Applied only during training (Keras
-    # automatically disables these layers at inference/eval time).
+   
     augmentation = tf.keras.Sequential([
         layers.RandomRotation(0.15),        # +/- ~27 degrees
         layers.RandomZoom(0.2),

@@ -1,29 +1,4 @@
-"""
-evaluate_word_level_accuracy_final.py
 
-Fixes the circularity problem Douglas flagged: the confusion-cost
-table must NOT be built from the same predictions used for the final
-word-correction test, or the error model has partially "seen" its own
-test data.
-
-Clean split used here:
-  - Train the classifier on Kaggle + ASL-HG (combined, mirror-augmented)
-    - completely separate from SignAlphaSet, as before.
-  - Split SignAlphaSet into two independent halves, stratified by letter:
-      Half A (50%) -> used ONLY to measure the confusion matrix and
-                       build the confusion-cost table.
-      Half B (50%) -> used ONLY to build simulated words and measure
-                       word-level accuracy with/without correction.
-    Neither half is used for both purposes. This is a proper held-out
-    split for the error model itself, not just for the classifier.
-
-This script also prints full methodology documentation for the
-dissertation methodology chapter: exact word count, construction
-method, word-length distribution, and dictionary coverage.
-
-Usage:
-    python evaluate_word_level_accuracy_final.py --kaggle landmarks_train.csv --aslhg landmarks_aslhg.csv --third landmarks_signalphaset.csv --dictionary_file words10k.txt
-"""
 
 import argparse
 import random

@@ -1,10 +1,26 @@
-# ASL Landmark Extraction + Training — Run This Locally
+# Running the pipeline locally
 
-You have the Kaggle "ASL Alphabet" dataset unzipped, with `asl_alphabet_train`
-and `asl_alphabet_test` folders. Everything below runs on YOUR machine —
-no need to upload the image dataset anywhere.
+This describes how to set up the environment and regenerate the landmark CSVs
+from the source image datasets. If you only want to reproduce the published
+results, the extracted CSVs are already in the repository and this step can be
+skipped — see the reproduction commands in `README.md`.
 
-## Folder structure you should have after unzipping
+## Requirements
+
+Python 3.10 or later.
+
+```bash
+pip install -r requirements.txt
+```
+
+If `pip` is not recognised, use `python -m pip install -r requirements.txt`.
+
+MediaPipe downloads its hand landmark model (approximately 7.5 MB) on first
+run; an internet connection is needed once.
+
+## Expected dataset layout
+
+`extract_landmarks.py` expects a folder containing one subfolder per class:
 
 ```
 asl_alphabet_train/
@@ -12,70 +28,67 @@ asl_alphabet_train/
         A1.jpg, A2.jpg, ...
     B/
         B1.jpg, ...
-    ... (one folder per letter, plus "space", "del", "nothing")
-asl_alphabet_test/
-    A_test.jpg
-    B_test.jpg
-    ... (just a few test images, not organized by folder)
+    ...
 ```
 
-## Step 1 — Install Python packages (one-time setup)
+The `--input` path must point at the folder that directly contains the class
+subfolders, not one level above or below it. A common cause of an empty output
+file is an archive that unpacks to a nested folder of the same name, for
+example `asl_alphabet_train/asl_alphabet_train/A/`.
 
-Open a terminal / Command Prompt in the folder where you saved these
-scripts, and run:
+## Extracting landmarks
 
-```
-pip install mediapipe opencv-python scikit-learn tensorflow pandas numpy
-```
-
-This may take a few minutes. If you hit a "pip not found" error, try
-`python -m pip install ...` instead.
-
-## Step 2 — Extract landmarks from the TRAIN folder
-
-```
-python extract_landmarks.py --input "PATH_TO/asl_alphabet_train" --output landmarks_train.csv --max_per_class 300
+```bash
+python extract_landmarks.py --input "PATH/asl_alphabet_train" --output landmarks_train.csv --max_per_class 300
 ```
 
-Replace `PATH_TO` with wherever you unzipped it, e.g.
-`C:\Users\Faruk\Downloads\asl_alphabet_train`.
+Repeat for each dataset, writing to `landmarks_aslhg.csv` and
+`landmarks_signalphaset.csv` respectively.
 
-**Important: `--max_per_class 300` on purpose.** The full dataset has
-~3,000 images per letter — you don't need all of them, and processing
-all ~87,000 images through MediaPipe would take a long time on a
-laptop. 300 images per letter (about 7,200 total) is plenty to get a
-real, meaningful baseline number for Friday. You can always re-run
-later with more.
+`--max_per_class 300` caps the number of images taken from each class. The
+Kaggle dataset contains roughly 3,000 images per letter; the experiments in
+this project use 300 per class, which keeps extraction to tens of minutes on a
+laptop rather than several hours, and keeps the three datasets comparable in
+size. Raising the cap is possible but was not necessary: the limiting factor
+in this work is cross-dataset disagreement, not training set size.
 
-This will take roughly 10-25 minutes depending on your machine. It
-will print progress as it finishes, and tell you how many images had
-no detectable hand (some dataset images are low quality — that's normal,
-don't worry about it).
+Extraction prints per-class progress and reports how many images produced no
+hand detection. A non-zero count is expected — some images in all three
+datasets are too blurred or cropped for the detector.
 
-**Output:** a file called `landmarks_train.csv` — this is small (a few
-MB), NOT huge like the image folder. This is the file you should send
-back to me.
+### Output format
 
-## Step 3 — (Optional, if you have time) Extract a validation set
+Each CSV has 64 columns: a `label` column followed by `x0,y0,z0 … x20,y20,z20`,
+the 21 landmarks in three dimensions. Coordinates are already normalised, with
+the wrist translated to the origin and all values scaled by the
+wrist-to-middle-fingertip distance.
 
-If you want the cross-dataset-style check without a second dataset yet,
-you can split off some training images you didn't already use. Skip
-this for now if time is tight — we can add it after Friday.
+## Cropped images for the CNN baseline
 
-## Step 4 — Send me the CSV
+`train_cnn.py` operates on cropped hand regions rather than landmarks:
 
-Once `landmarks_train.csv` exists, upload just that CSV file back to
-this chat (it'll be small — a few MB, not hundreds of MB). I'll run the
-training script on it immediately and get you a real accuracy number
-and confusion matrix.
+```bash
+python crop_hands.py --input "PATH/asl_alphabet_train" --output cropped_combined --prefix kaggle --letters_only --max_per_class 300
+python crop_hands.py --input "PATH/SignAlphaSet" --output cropped_signalphaset --prefix sas --letters_only
+python train_cnn.py --train cropped_combined --test cropped_signalphaset
+```
 
-## If something goes wrong
+`--prefix` keeps filenames from colliding when more than one dataset is
+written to the same output folder. The cropped folders are excluded from the
+repository by `.gitignore`; they are regenerated by the commands above.
 
-- **"No module named mediapipe"** → the pip install in Step 1 didn't
-  finish. Re-run it and check for red error text.
-- **Script runs but writes 0 rows** → double check the `--input` path
-  points to the folder that directly CONTAINS the letter folders (A, B,
-  C...), not one level above or below it.
-- **It's very slow** → lower `--max_per_class` to 150 or 100. Fewer
-  images per class still gives a valid (if slightly less precise)
-  baseline number.
+## Troubleshooting
+
+**`No module named mediapipe`** — the install did not complete. Re-run it and
+check for errors in the output.
+
+**Script runs but writes zero rows** — the `--input` path is wrong. See
+"Expected dataset layout" above.
+
+**Extraction is slow** — lower `--max_per_class`. Extraction is CPU-bound and
+runs at roughly 10–30 images per second depending on the machine.
+
+**TensorFlow reports no GPU on Windows** — this is expected. TensorFlow 2.11
+and later do not support GPU on native Windows. All results in this project
+were produced on CPU; the networks are small enough that this is not a
+constraint.
